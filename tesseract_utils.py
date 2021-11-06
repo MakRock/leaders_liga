@@ -2,33 +2,43 @@
 #!apt install tesseract-ocr-rus
 #!apt install libtesseract-dev
 #!pip install pytesseract
+
 import pytesseract
 import cv2
 import pandas as pd
 
+#Для таблиц
+#!!pip install table_ocr
+import numpy as np
+#from table_ocr.ocr_image import crop_to_text
 
 def tesseract_enabled():
     return 'rus' in pytesseract.get_languages()
 
+#функция слепляет картинки в одну
+def concat_images(image_set, how=0):
+    def resize_image(image_matrix, nh, nw):
+        #image_matrix = crop_to_text(image_matrix)
+        oh, ow = image_matrix.shape[:2]
+        resized_image = np.full((nh, nw), 1, dtype=image_matrix.dtype)
+        resized_image[:oh, :ow] = image_matrix
+        return resized_image
 
-# def get_text_corpus(jpg, config=r'-l rus --oem 3 --psm 6'):
-#     '''
-#     # Функция принимает на вход jpg, возвращает корпус текста строкой
-#     # txt, coord = get_text_corpus(img)
-#     '''
-#     if not tesseract_enabled():
-#         raise Exception('Russian is not installed..')
-        
-#     data = pytesseract.image_to_data(jpg, output_type='data.frame', config=config)
-#     data = data[~pd.isna(data.text)]
-#     #data.text = data.text.apply(lambda x: x.lower())
-    
-#     if len(data) < 1:
-#         raise Exception('No words..')
-#     try:
-#         return data.text.str.cat(sep=' '), data #[['left', 'top', 'width', 'height']]
-#     except:
-#         return ' '.join(data['text'].astype('str')), data
+    shapes = [imat.shape for imat in image_set]
+    max_h = max([s[0] for s in shapes])
+    max_w = max([s[1] for s in shapes])
+    images_resized = [
+            resize_image(img, max_h, max_w) 
+            for img in image_set
+        ]
+    if (how == 0) or (how == 'vertical'):
+        concats = cv2.vconcat(images_resized)
+    elif (how == 1) or (how == 'horizontal'):
+        concats = cv2.hconcat(images_resized)
+    else:
+        concats = cv2.hconcat(images_resized)
+    return concats
+
 
 
 def get_text_corpus(jpg):
@@ -43,16 +53,15 @@ def get_text_corpus(jpg):
         metrics = 1
     else:
         metrics = 0
-
+        
     if len(data) < 1:
-        raise Exception('No words..')
+        #raise Exception('No words..')
+        print('No words..')
+        return '', None, None
     try:
-        return data.text.str.cat(sep=' '), data, metrics #[['left', 'top', 'width', 'height']]
+        return data.text.str.cat(sep=' '), data, metrics
     except:
         return ' '.join(data['text'].astype('str')), data, metrics     
- 
-def get_text_corpus_doc(doc):
-    return ''
 
 
 def get_jpg_anon(jpg, coordinates, filled=True):
@@ -64,9 +73,12 @@ def get_jpg_anon(jpg, coordinates, filled=True):
         filled = -1
     else:
         filled = 2
-    for item in coordinates.iterrows():
-        c = item[1]
-        jpg = cv2.rectangle(jpg, (c.left, c.top), (c.left + c.width, c.top + c.height), (0, 0, 0), filled) #black
+    
+    if isinstance(coordinates, pd.DataFrame): #добавил это условие, потом что иногда пустые координаты могут приходить
+        for item in coordinates.iterrows():
+            c = item[1]
+            jpg = cv2.rectangle(jpg, (c.left, c.top), (c.left + c.width, c.top + c.height), (0, 0, 0), filled) #black
+            
     return jpg
 
     

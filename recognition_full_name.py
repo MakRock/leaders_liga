@@ -25,10 +25,30 @@ def extract_full_name(corpus):
                       str(name)) != []: # регулярка для поиска имен с инициалами
             
             if filter_result(name, 'initials'):
-                full_name_list.append(str(name).strip())
+                
+                # если пробела между инициалами и фамилией нет
+                if re.findall(r'[А-Я]{1}\.{1}\s*[А-Я]{1}\.{1}[А-Я]{1}[А-Я|а-я]+', str(name)) != []:
+                    full_name_list.append(str(name).strip())
+                
+                # если есть пробел
+                else:
+                    first_name = re.findall(r'[А-Я]{1}\.{1}\s*[А-Я]{1}\.{1}', str(name))
+                    second_name = name.replace(first_name[0], '')
+                    second_name = second_name.split(' ')
+                        
+                    if first_name != []:
+                        full_name_list.append(first_name[0].strip())
+                        for name_ in second_name:
+                            full_name_list.append(str(name_).strip())
+                        
+                    else:
+                        name_tmp = re.split(' ', str(name))
+                        for name_ in name_tmp:
+                            full_name_list.append(str(name_).strip())
+                
                 eval_marks.append(0)
                 
-        else:                           # если регулярка ничего не нашла -> полное фио
+        else:                           # если полное фио
             if filter_result(name, 'full'):
                 
                 eval_marks.append(get_evaluation(name, result))
@@ -53,7 +73,7 @@ def preprocess_text(corpus):
     
     ''' Предобработка '''
     
-    new_c = re.sub('[$|@|&|"|||:]', '', corpus)
+    new_c = re.sub('[$|@|&|"|||:|#|>|<|„|“|^]', '', corpus)
     new_c = new_c.replace('\n\n', ', ')
     new_c = new_c.replace('\n', ' ')
     new_c = new_c.replace('  ', ' ')
@@ -193,8 +213,14 @@ def second_postprocess(old_list):
             continue
         elif len(elem) == 3 and re.findall(r'[А-Я]{3}', str(elem)) != []:
             continue
+            
+        if ' ' in elem and re.findall(r'\s+[А-Я]{1}\.{1}\s*[А-Я]{1}\.{1}\s+|[А-Я]{1}\.{1}\s*[А-Я]{1}\.{1}\s+[А-Я|а-я]+\s+|[А-Я|а-я]+\s+[А-Я|а-я]+\s+[А-Я]{1}\.{1}\s*[А-Я]{1}\.{1}', str(elem)) != []:
+            elem_tmp = elem.split(' ')
+            for elem_ in elem_tmp:
+                if filter_result(elem_, 'other'):
+                    new_list.append(elem_)
         
-        if filter_result(elem, 'other'):
+        elif filter_result(elem, 'other'):
             new_list.append(elem)
     
     return new_list

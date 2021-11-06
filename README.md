@@ -42,6 +42,6 @@ pip install --upgrade --force-reinstall pymupdf
 * Анна Тимошенко, [a.timoshenko@data-in.ru]
 * Мила Минниханова, [m.minnikhanova@data-in.ru]
 * Эльвира Гизатуллина, [e.gizatullina@data-in.ru]
-* Данила Валько, [d.valko@data-in.ru]
 * Максим Веденьков, [m.vedenkov@data-in.ru]
+* Данила Валько, [d.valko@data-in.ru]
 
